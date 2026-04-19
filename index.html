@@ -38,11 +38,11 @@
   .first-view__grid{grid-template-columns:1fr}
 }
 </style><link rel="stylesheet" href="/src/style.css"></head>
-<body><div id="app" data-ui-variant="dinner" data-primary-layout="ingredient_filter_bar_with_meal_cards"><section class="first-view first-view--dinner" data-ready-role="first-view">
+<body><div id="app" data-ui-variant="filter" data-primary-layout="question_cards_with_priority_deck"><section class="first-view first-view--filter" data-ready-role="first-view">
   <div class="first-view__top">
     <div>
       <div class="mini-label">Day055</div>
-      <p class="first-view__eyebrow">キッチンアプリコット</p>
+      <p class="first-view__eyebrow">診察メモブルー</p>
     </div>
     <a class="intro-link" href="https://github.com/ryo909/ai-dev-day-055" target="_blank" rel="noopener">GitHub</a>
   </div>
@@ -59,17 +59,17 @@
     </article>
     <article class="fv-block fv-block--start" data-ready-role="start-block">
       <p class="fv-kicker">最初にやること</p>
-      <h2>今ある食材を選ぶ</h2>
+      <h2>聞きたいことを足す</h2>
       <dl class="fv-pair">
         <dt>入力 / 操作</dt>
-        <dd>入力</dd>
+        <dd>質問カード</dd>
       </dl>
       <dl class="fv-pair">
         <dt>サンプル値</dt>
-        <dd>ここに入力...</dd>
+        <dd>質問例を読み込んで順番を入れ替える</dd>
       </dl>
       <p class="fv-helper">質問カードを並べると、今聞く順と後回し項目が分かります。</p>
-      <button id="sampleFillBtn" data-ready-role="primary-cta" class="primary-intro-btn" style="background:linear-gradient(135deg,var(--fv-accent),var(--fv-accent-2))">冷蔵庫の残りで試す</button>
+      <button id="sampleFillBtn" data-ready-role="primary-cta" class="primary-intro-btn" style="background:linear-gradient(135deg,var(--fv-accent),var(--fv-accent-2))">受診前の質問で試す</button>
       <p class="fv-inline-note">初見なら「例で試す」から始めると、そのまま結果見本まで確認できます。</p>
     </article>
     <article class="fv-block fv-block--preview" data-ready-role="output-preview">
@@ -83,4 +83,4 @@
       </div>
     </article>
   </div>
-</section><section class="brief-canvas brief-canvas--dinner"><div id="briefCanvas"></div></section></div><script type="module" src="/src/main.js"></script></body></html>
+</section><section class="brief-canvas brief-canvas--filter"><div id="briefCanvas"></div></section></div><script type="module" src="/src/main.js"></script></body></html>
