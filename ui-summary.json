@@ -1,0 +1,11 @@
+{
+  "title": "直前質問デッキ",
+  "archetype": "flow_pick",
+  "interaction_model": "toggle_ingredients_to_survivor_meals",
+  "primary_layout": "ingredient_filter_bar_with_meal_cards",
+  "result_presentation_style": "remaining_meal_cards",
+  "palette_motif": "キッチンアプリコット",
+  "main_cta": "冷蔵庫の残りで試す",
+  "intro_variant": "dinner_pick",
+  "ui_variant": "dinner"
+}
