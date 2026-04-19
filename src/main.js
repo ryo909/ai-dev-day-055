@@ -1,5 +1,5 @@
 import './style.css';
-const PROFILE = {"day":"Day055","title":"Visit Question Deck","display_name_ja":"直前質問デッキ","one_sentence":"受診や内見の直前に聞く順を整えるツール","purpose_line_ja":"直前に聞く順を決めやすくするためのツールです。","use_case_line_ja":"受診や内見の直前に質問の優先順を整えたい時に使います。","how_it_works_line_ja":"質問カードを並べると、今聞く順と後回し項目が分かります。","core_action":"sequence","family":"question_deck_pack","mechanic":"flow_pick","input_style":"question_cards","output_style":"choice_cards","output_label":"ここを見ればOKです","audience_promise":"限られた時間でも聞く順を決めて入れる。","publish_hook":"質問カードを自分で追加・編集しながら優先順に並べると、今聞くべき順と後回し項目が一画面で固まる。","engine":"brief_driven","interaction_archetype":"flow_pick","page_archetype":"choice_rack","ui_variant":"dinner","intro_variant":"dinner_pick","interaction_model":"toggle_ingredients_to_survivor_meals","primary_layout":"ingredient_filter_bar_with_meal_cards","result_presentation_style":"remaining_meal_cards","palette_motif":"キッチンアプリコット","main_cta":"冷蔵庫の残りで試す","input_panel_title":"今ある食材を選ぶ","sample_panel_title":"冷蔵庫の残りで試す","guide_panel_title":"献立の見どころ","hero_panel_label":"今夜の候補","output_shape":"choice_rack","state_model":"flow_pick_state","core_loop":"question_cards -> flow_pick -> choice_cards","component_pack":"choice_rack+choice_cards","scaffold_id":"brief_canvas","single_shot_text_generator":false};
+const PROFILE = {"day":"Day055","title":"Visit Question Deck","display_name_ja":"直前質問デッキ","one_sentence":"受診や内見の直前に聞く順を整えるツール","purpose_line_ja":"直前に聞く順を決めやすくするためのツールです。","use_case_line_ja":"受診や内見の直前に質問の優先順を整えたい時に使います。","how_it_works_line_ja":"質問カードを並べると、今聞く順と後回し項目が分かります。","core_action":"sequence","family":"question_deck_pack","mechanic":"flow_pick","input_style":"question_cards","output_style":"choice_cards","output_label":"ここを見ればOKです","audience_promise":"限られた時間でも聞く順を決めて入れる。","publish_hook":"質問カードを自分で追加・編集しながら優先順に並べると、今聞くべき順と後回し項目が一画面で固まる。","engine":"brief_driven","interaction_archetype":"flow_pick","page_archetype":"choice_rack","ui_variant":"filter","intro_variant":"question_deck","interaction_model":"rank_questions_into_now_or_later","primary_layout":"question_cards_with_priority_deck","result_presentation_style":"now_vs_later_question_cards","palette_motif":"診察メモブルー","main_cta":"受診前の質問で試す","input_panel_title":"聞きたいことを足す","sample_panel_title":"受診前の質問で試す","guide_panel_title":"優先順の見どころ","hero_panel_label":"今聞く順","output_shape":"choice_rack","state_model":"question_deck_state","core_loop":"question_cards -> flow_pick -> choice_cards","component_pack":"choice_rack+choice_cards","scaffold_id":"brief_canvas","single_shot_text_generator":false};
 const byId = (id) => document.getElementById(id);
 const state = {
   tokens: ['買う', '待つ', '比べる', '今週中'],
@@ -35,11 +35,42 @@ function boot() {
 }
 
 function setupCommonUi() {
+  applyBriefChrome();
   const btn = byId('sampleFillBtn');
   if (btn) {
     btn.addEventListener('click', runSample);
   }
   updateCaptureReady();
+}
+
+function applyBriefChrome() {
+  const app = byId('app');
+  if (app) {
+    app.dataset.uiVariant = PROFILE.ui_variant || app.dataset.uiVariant || 'filter';
+    app.dataset.primaryLayout = PROFILE.primary_layout || app.dataset.primaryLayout || 'brief_canvas';
+  }
+  const firstView = document.querySelector('.first-view');
+  if (firstView) {
+    [...firstView.classList].filter((name) => name.startsWith('first-view--')).forEach((name) => firstView.classList.remove(name));
+    firstView.classList.add(`first-view--${PROFILE.ui_variant || 'filter'}`);
+  }
+  const briefCanvas = document.querySelector('.brief-canvas');
+  if (briefCanvas) {
+    [...briefCanvas.classList].filter((name) => name.startsWith('brief-canvas--')).forEach((name) => briefCanvas.classList.remove(name));
+    briefCanvas.classList.add(`brief-canvas--${PROFILE.ui_variant || 'filter'}`);
+  }
+  const setText = (selector, value) => {
+    const node = document.querySelector(selector);
+    if (node && value) node.textContent = value;
+  };
+  setText('.first-view__eyebrow', PROFILE.palette_motif);
+  setText('.fv-block--start h2', PROFILE.input_panel_title);
+  setText('.fv-block--preview h2', PROFILE.output_label);
+  setText('.fv-preview-card strong', PROFILE.output_label);
+  setText('#sampleFillBtn', PROFILE.main_cta);
+  const pairValues = document.querySelectorAll('.fv-block--start .fv-pair dd');
+  if (pairValues[0]) pairValues[0].textContent = '質問カード';
+  if (pairValues[1]) pairValues[1].textContent = '質問例を読み込んで順番を入れ替える';
 }
 
 function runSample() {
@@ -532,6 +563,10 @@ function setupBriefCanvas() {
   }
   if (key === 'sort_baskets') {
     setupLaundryLoad(root);
+    return;
+  }
+  if (key === 'flow_pick' && PROFILE.family === 'question_deck_pack') {
+    setupQuestionDeck(root);
     return;
   }
   if (key === 'flow_pick') {
@@ -1409,6 +1444,170 @@ function setupFridgeDinner(root) {
 
   mountPresetButtons([{ label: '20分夕飯', action: () => { model = clone(presets['20分夕飯']); render(); } }]);
   state.helpers.runBriefSample = () => { model = clone(presets['20分夕飯']); render(); };
+  render();
+}
+
+function setupQuestionDeck(root) {
+  const presets = {
+    '受診前': [
+      { question: '薬を飲み切る前に次回受診は必要ですか', priority: 1, bucket: 'now', note: '最初に確認したい' },
+      { question: '検査結果で生活面の注意はありますか', priority: 2, bucket: 'now', note: '時間が短くても聞く' },
+      { question: '市販薬との飲み合わせで避ける物はありますか', priority: 3, bucket: 'later', note: '時間があれば確認' }
+    ]
+  };
+  let cards = clone(presets['受診前']);
+
+  root.querySelector('#briefInputZone').innerHTML = `
+    <div class="brief-form">
+      <div class="action-row">
+        <input id="questionDraftInput" class="text-input" placeholder="聞きたいことを追加">
+        <select id="questionDraftBucket">
+          <option value="now">今聞く</option>
+          <option value="later">後回し</option>
+        </select>
+        <select id="questionDraftPriority">
+          <option value="1">最優先</option>
+          <option value="2">優先</option>
+          <option value="3">時間があれば</option>
+        </select>
+        <button id="questionDraftAdd" class="primary-btn" type="button">質問を追加</button>
+      </div>
+    </div>
+    <div class="item-grid" id="questionDraftList"></div>
+  `;
+  root.querySelector('#briefResultZone').innerHTML = `
+    <div class="cut-board">
+      <div class="listing-grid" id="questionNowDeck"></div>
+      <div class="overflow-list" id="questionLaterDeck"></div>
+    </div>
+  `;
+  setResultHint('質問を足したり優先度を直すたび、今聞く順だけが先に固まります。');
+
+  function addQuestion() {
+    const input = byId('questionDraftInput');
+    const bucket = byId('questionDraftBucket');
+    const priority = byId('questionDraftPriority');
+    const question = (input.value || '').trim();
+    if (!question) return;
+    cards.push({
+      question,
+      bucket: bucket.value,
+      priority: Number(priority.value),
+      note: bucket.value === 'now' ? 'その場で聞く候補' : '時間が余れば聞く'
+    });
+    input.value = '';
+    render();
+  }
+
+  function render() {
+    byId('questionDraftList').innerHTML = cards.map((card, idx) => `
+      <div class="item-card ${card.bucket === 'now' ? 'keep' : 'cut'}">
+        <input class="text-input" data-question-text="${idx}" value="${escapeHtml(card.question)}">
+        <div class="action-row">
+          <select data-question-bucket="${idx}">
+            <option value="now" ${card.bucket === 'now' ? 'selected' : ''}>今聞く</option>
+            <option value="later" ${card.bucket === 'later' ? 'selected' : ''}>後回し</option>
+          </select>
+          <select data-question-priority="${idx}">
+            <option value="1" ${card.priority === 1 ? 'selected' : ''}>最優先</option>
+            <option value="2" ${card.priority === 2 ? 'selected' : ''}>優先</option>
+            <option value="3" ${card.priority === 3 ? 'selected' : ''}>時間があれば</option>
+          </select>
+        </div>
+        <div class="mini-actions">
+          <button class="assign-btn" data-question-up="${idx}" type="button">上へ</button>
+          <button class="assign-btn" data-question-down="${idx}" type="button">下へ</button>
+          <button class="assign-btn" data-question-remove="${idx}" type="button">削除</button>
+        </div>
+      </div>
+    `).join('');
+
+    root.querySelectorAll('[data-question-text]').forEach((input) => {
+      input.addEventListener('input', () => {
+        cards[Number(input.dataset.questionText)].question = input.value;
+        renderResult();
+      });
+    });
+    root.querySelectorAll('[data-question-bucket]').forEach((select) => {
+      select.addEventListener('change', () => {
+        const idx = Number(select.dataset.questionBucket);
+        cards[idx].bucket = select.value;
+        cards[idx].note = select.value === 'now' ? 'その場で聞く候補' : '時間が余れば聞く';
+        render();
+      });
+    });
+    root.querySelectorAll('[data-question-priority]').forEach((select) => {
+      select.addEventListener('change', () => {
+        cards[Number(select.dataset.questionPriority)].priority = Number(select.value);
+        render();
+      });
+    });
+    root.querySelectorAll('[data-question-up]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.questionUp);
+        if (idx === 0) return;
+        [cards[idx - 1], cards[idx]] = [cards[idx], cards[idx - 1]];
+        render();
+      });
+    });
+    root.querySelectorAll('[data-question-down]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const idx = Number(btn.dataset.questionDown);
+        if (idx >= cards.length - 1) return;
+        [cards[idx], cards[idx + 1]] = [cards[idx + 1], cards[idx]];
+        render();
+      });
+    });
+    root.querySelectorAll('[data-question-remove]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        cards.splice(Number(btn.dataset.questionRemove), 1);
+        render();
+      });
+    });
+    renderResult();
+  }
+
+  function renderResult() {
+    const now = cards
+      .filter((card) => card.bucket === 'now')
+      .sort((a, b) => a.priority - b.priority || a.question.localeCompare(b.question, 'ja'));
+    const later = cards
+      .filter((card) => card.bucket !== 'now')
+      .sort((a, b) => a.priority - b.priority || a.question.localeCompare(b.question, 'ja'));
+
+    byId('questionNowDeck').innerHTML = now.length
+      ? now.map((card, idx) => `
+          <div class="listing-card">
+            <div class="listing-title">${idx + 1}. ${escapeHtml(card.question)}</div>
+            <div class="subline">${card.priority === 1 ? '最優先' : card.priority === 2 ? '優先' : '時間があれば'} / ${escapeHtml(card.note)}</div>
+          </div>
+        `).join('')
+      : '<div class="empty-state">今聞く質問を入れると、ここに順番が出ます。</div>';
+    byId('questionLaterDeck').innerHTML = later.length
+      ? later.map((card) => `<div class="overflow-pill"><strong>${escapeHtml(card.question)}</strong><div class="subline">${card.priority === 3 ? '時間が余れば' : '後半で確認'}</div></div>`).join('')
+      : '<div class="empty-state">後回し候補はありません。</div>';
+
+    setHeroStat(now[0] ? `${now[0].question.slice(0, 10)}${now[0].question.length > 10 ? '…' : ''}` : '未選択');
+    setStatusCards([
+      { label: '今聞く順', value: `${now.length}件` },
+      { label: '後回し', value: `${later.length}件` },
+      { label: '最優先', value: now[0] ? '1番目が確定' : '未設定' }
+    ]);
+    setResultLead(now.length
+      ? '最初に聞く順だけが先に見えるので、その場で思い出した順に話すより短時間で済みます。'
+      : '質問を足すと、今聞く順がここに並びます。');
+  }
+
+  byId('questionDraftAdd').addEventListener('click', addQuestion);
+  byId('questionDraftInput').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      addQuestion();
+    }
+  });
+
+  mountPresetButtons([{ label: '受診前', action: () => { cards = clone(presets['受診前']); render(); } }]);
+  state.helpers.runBriefSample = () => { cards = clone(presets['受診前']); render(); };
   render();
 }
 
